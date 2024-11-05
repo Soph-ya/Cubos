@@ -1,0 +1,70 @@
+networks:
+  internal_net:
+    driver: bridge
+  external_net:
+    driver: bridge
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"  
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf 
+    networks:
+      - internal_net
+      - external_net
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    networks:
+      - internal_net
+    restart: always
+
+  backend:
+    container_name: project_backend
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    networks:
+      - internal_net
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      PORT: ${PORT}
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: project_db
+    image: postgres:15.8
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "database", "-U", "postgres" ]
+      interval: 5s 
+      timeout: 5s   
+      retries: 3    
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    networks:
+      - internal_net
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../sql:/docker-entrypoint-initdb.d
+    restart: on-failure
+
+volumes:
+  db_data:
