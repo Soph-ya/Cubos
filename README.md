@@ -1,3 +1,4 @@
 # Desafio técnico - Cubos DevOps
 
-Este é um documento com os materiais que serão disponibilizado para o desafio técnico.
+Para testar a aplicação basta rodar na raiz do projeto o arquivo build_and_run.sh
+"./build_and_run.sh"
